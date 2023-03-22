@@ -1,0 +1,739 @@
+{
+  "name": "ZimmWriter Articles w/ Slack Notification",
+  "nodes": [
+    {
+      "parameters": {
+        "title": "={{ $node[\"Markdown\"].json[\"title\"] }}",
+        "additionalFields": {
+          "content": "={{ $node[\"Markdown\"].json[\"body\"] }}",
+          "status": "draft"
+        }
+      },
+      "name": "WordPress",
+      "type": "n8n-nodes-base.wordpress",
+      "typeVersion": 1,
+      "position": [
+        760,
+        460
+      ],
+      "id": "acf45486-f828-4584-9b1d-e8e0ca294b93",
+      "credentials": {
+        "wordpressApi": {
+          "id": "7",
+          "name": "stoutewebsolutions.com"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "511e13ca-3853-45f3-b5d0-0c6600b8dbe2",
+      "name": "When clicking \"Execute Workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1560,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "operation": "list",
+        "path": "/path_to_your_folder_of_articles"
+      },
+      "id": "2ccf6e05-b360-48fb-9909-71017ed83ec0",
+      "name": "Nextcloud",
+      "type": "n8n-nodes-base.nextCloud",
+      "typeVersion": 1,
+      "position": [
+        -1380,
+        500
+      ],
+      "credentials": {
+        "nextCloudApi": {
+          "id": "8",
+          "name": "Stoute Web Solutions - Next Cloud"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "path": "={{ $json[\"path\"] }}",
+        "binaryPropertyName": "=data"
+      },
+      "id": "6f4b839c-dc09-4dae-8459-69d87cd89b90",
+      "name": "Nextcloud1",
+      "type": "n8n-nodes-base.nextCloud",
+      "typeVersion": 1,
+      "position": [
+        -1020,
+        500
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "nextCloudApi": {
+          "id": "8",
+          "name": "Stoute Web Solutions - Next Cloud"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "setAllData": false,
+        "destinationKey": "filecontents",
+        "options": {
+          "jsonParse": false
+        }
+      },
+      "id": "a89cc3c2-31ed-4bca-a57a-440f8db69485",
+      "name": "Move Binary Data",
+      "type": "n8n-nodes-base.moveBinaryData",
+      "typeVersion": 1,
+      "position": [
+        -840,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the file content from the previous node\nconst fileContent = items[0].json.filecontents;\n\n// Split the file content into an array of lines\nconst lines = fileContent.split('\\n');\n\n// Get the first line as the title\nconst title = lines[0].trim();\n\n// Get the rest of the lines as the body and join them together\nconst body = lines.slice(1).join('\\n').trim();\n\n// Set the output\nreturn [{json: {title, body}}];\n"
+      },
+      "id": "9bfd61fe-9541-4140-b099-a8d85a1af143",
+      "name": "Code2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        -260,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "={{ $json[\"body\"] }}",
+        "destinationKey": "content",
+        "options": {}
+      },
+      "id": "1ae89086-26a2-4833-a4b9-bc237c3f9bd7",
+      "name": "Markdown",
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "path": "={{ $node[\"Nextcloud1\"].json[\"path\"] }}",
+        "toPath": "=/path_to_your_completed_files/{{ $json[\"title\"][\"rendered\"] }} Published.txt"
+      },
+      "id": "1550b619-4c92-4b5f-b716-938cc0fd442c",
+      "name": "Nextcloud3",
+      "type": "n8n-nodes-base.nextCloud",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        460
+      ],
+      "credentials": {
+        "nextCloudApi": {
+          "id": "8",
+          "name": "Stoute Web Solutions - Next Cloud"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "7ed72030-4afa-43c3-bfd0-05827ba40fb0",
+      "name": "SplitInBatches1",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [
+        -1200,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": true,
+              "value2": "={{$node[\"SplitInBatches1\"].context[\"noItemsLeft\"]}}"
+            }
+          ]
+        }
+      },
+      "id": "4954860b-82a0-4350-852f-25e4e320f0a7",
+      "name": "IF1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1360,
+        580
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "4e554007-cfbd-41e9-a2b8-1c65ead18ad5",
+      "name": "No Operation, do nothing1",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "id": "af36fd45-bda7-4ebe-945c-cd122344c914",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1560,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "channel": "writers-block",
+        "text": "=<@channel> another batch of drafts have been added to the [domain] website. Please get them edited, images created, and get the article published.",
+        "otherOptions": {
+          "link_names": true
+        },
+        "attachments": []
+      },
+      "id": "8f76fb20-556d-4f53-a62f-114dd36033b4",
+      "name": "Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [
+        1580,
+        500
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "10",
+          "name": "Stoute Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "team": "2218139",
+        "space": "2339925",
+        "folder": "4302306",
+        "list": "6578543",
+        "filters": {
+          "statuses": [
+            "create - zimmwriter"
+          ]
+        }
+      },
+      "id": "5f3c46be-dcb8-4ef5-82b7-4438b6b15943",
+      "name": "ClickUp",
+      "type": "n8n-nodes-base.clickUp",
+      "typeVersion": 1,
+      "position": [
+        100,
+        500
+      ],
+      "credentials": {
+        "clickUpApi": {
+          "id": "9",
+          "name": "Stoute ClickUp Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "606bc150-8503-43c2-bf49-92ce47939308",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [
+        280,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $node[\"Code2\"].json[\"title\"].toLowerCase() }}",
+              "value2": "={{ $json[\"name\"].toLowerCase() }}"
+            }
+          ]
+        }
+      },
+      "id": "6e02b397-0e5e-4359-896b-34917540a246",
+      "name": "IF",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        520,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "id": "={{ $node[\"Split In Batches\"].json[\"id\"] }}",
+        "updateFields": {
+          "status": "fact check + edit"
+        }
+      },
+      "id": "e472e340-71e8-4d3e-9c78-9773a4f4efeb",
+      "name": "ClickUp1",
+      "type": "n8n-nodes-base.clickUp",
+      "typeVersion": 1,
+      "position": [
+        940,
+        460
+      ],
+      "credentials": {
+        "clickUpApi": {
+          "id": "9",
+          "name": "Stoute ClickUp Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json[\"filecontents\"] }}",
+              "operation": "contains",
+              "value2": "Settings used: "
+            }
+          ]
+        }
+      },
+      "id": "1f597deb-515d-45d5-9c04-e0620dff6b00",
+      "name": "IF2",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -620,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the file contents from the input data\nconst fileContents = items[0].json.filecontents;\n\n// Split the file contents into an array of lines\nconst lines = fileContents.split('\\n');\n\n// Remove the first 2 lines\nlines.splice(0, 2);\n\n// Join the remaining lines back into a single string\nconst newFileContents = lines.join('\\n');\n\n// Set the new file contents as the output\nreturn [{ json: { filecontents: newFileContents } }];\n"
+      },
+      "id": "ad012d43-8df1-4ef7-9f6b-01efdb4871cd",
+      "name": "1 Click Blogs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        -440,
+        580
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the file contents from the input data\nconst fileContents = items[0].json.filecontents;\n\n// Split the file contents into an array of lines\nconst lines = fileContents.split('\\n');\n\n// Remove the first 2 lines\nlines.splice(0, 4);\n\n// Join the remaining lines back into a single string\nconst newFileContents = lines.join('\\n');\n\n// Set the new file contents as the output\nreturn [{ json: { filecontents: newFileContents } }];\n"
+      },
+      "id": "4d329121-8492-4ec9-bb3d-7e4fbcb93ec9",
+      "name": "Bulk Writer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        -440,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 15,
+        "unit": "seconds"
+      },
+      "id": "5a69f710-188b-45dc-b863-c54d310e94ff",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        1580,
+        660
+      ],
+      "webhookId": "9a77ea03-0471-4941-b789-2d1c49451372"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": true,
+              "value2": "={{$node[\"Split In Batches\"].context[\"noItemsLeft\"]}}"
+            }
+          ]
+        }
+      },
+      "id": "61133f92-43b7-4dc2-b196-c79f0b716898",
+      "name": "IF3",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        760,
+        620
+      ]
+    },
+    {
+      "parameters": {
+        "channel": "writers-block",
+        "text": "<@username> The workflow has run into an error. Please review and reactivate the workflow.",
+        "otherOptions": {
+          "link_names": true
+        },
+        "attachments": []
+      },
+      "id": "37bffd91-d41c-498f-99ae-b9b23e3686ad",
+      "name": "Slack1",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [
+        980,
+        660
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "10",
+          "name": "Stoute Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "92008fb6-1923-4185-8fb2-3c5c9bdaeaa8",
+      "name": "No Operation, do nothing",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        660
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking \"Execute Workflow\"": {
+      "main": [
+        [
+          {
+            "node": "Nextcloud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nextcloud": {
+      "main": [
+        [
+          {
+            "node": "SplitInBatches1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nextcloud1": {
+      "main": [
+        [
+          {
+            "node": "Move Binary Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move Binary Data": {
+      "main": [
+        [
+          {
+            "node": "IF2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown": {
+      "main": [
+        [
+          {
+            "node": "ClickUp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WordPress": {
+      "main": [
+        [
+          {
+            "node": "ClickUp1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nextcloud3": {
+      "main": [
+        [
+          {
+            "node": "IF1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF1": {
+      "main": [
+        [
+          {
+            "node": "Slack",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SplitInBatches1": {
+      "main": [
+        [
+          {
+            "node": "Nextcloud1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Nextcloud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ClickUp": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "IF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF": {
+      "main": [
+        [
+          {
+            "node": "WordPress",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ClickUp1": {
+      "main": [
+        [
+          {
+            "node": "Nextcloud3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF2": {
+      "main": [
+        [
+          {
+            "node": "Bulk Writer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "1 Click Blogs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1 Click Blogs": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bulk Writer": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "SplitInBatches1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF3": {
+      "main": [
+        [
+          {
+            "node": "Slack1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack1": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "2439ef7f-69db-4c5e-a5fc-2342ff38e0c2",
+  "id": 13,
+  "meta": {
+    "instanceId": "3d89ec2ba0ca728cd280ad1b51fa18df0b27d30456070d37be6d4a3b43d79f6b"
+  },
+  "tags": [
+    {
+      "createdAt": "2022-11-09T21:53:01.677Z",
+      "updatedAt": "2022-11-09T21:53:01.677Z",
+      "id": "4",
+      "name": "Stoute"
+    },
+    {
+      "createdAt": "2023-03-11T02:22:48.076Z",
+      "updatedAt": "2023-03-11T02:22:48.076Z",
+      "id": "10",
+      "name": "Your Websites"
+    },
+    {
+      "name": "ZimmWriter",
+      "createdAt": "2023-03-21T23:53:18.259Z",
+      "updatedAt": "2023-03-21T23:53:18.259Z",
+      "id": "11"
+    }
+  ]
+}
